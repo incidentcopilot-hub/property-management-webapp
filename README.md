@@ -1,2 +1,3 @@
-# property-management-webapp
-MVP for property management web application for private landlords
+# Property Management MVP
+
+Scaffold for a property management MVP with backend, frontend, and infrastructure directories.
