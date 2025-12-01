@@ -4,9 +4,11 @@ Starter scaffold for a property management MVP targeted at private landlords. Bu
 
 ## Getting started
 
-1. Install dependencies (Node.js 18+ recommended):
+All frontend commands are run from within the `frontend/` directory.
+
+1. Install dependencies inside the frontend app (Node.js 18+ recommended):
    ```bash
-   npm install
+   cd frontend && npm install
    ```
 2. Run the dev server (default at http://localhost:5173):
    ```bash
@@ -23,18 +25,17 @@ Starter scaffold for a property management MVP targeted at private landlords. Bu
 
 ## Repository layout
 
-- `src/` – Frontend entrypoint and React components for the Vite app.
-- `frontend/` – Additional frontend assets and prototypes.
+- `frontend/` – Frontend application (Vite + React) with routes, components, and styles.
 - `backend/` – Placeholder Node/TypeScript backend package for future APIs.
 - `infra/` – IaC and deployment scaffolding.
 - `docs/` – Architecture notes and product documentation.
 
 ## Project structure
 
-- `src/App.tsx` – Shell layout with navigation and high-level routes.
-- `src/pages/` – Route-level screens for dashboard, properties, and tenants.
-- `src/components/` – Reusable UI pieces such as summary cards and task lists.
-- `src/styles.css` – Lightweight design system for the MVP.
+- `frontend/src/App.tsx` – Shell layout with navigation and high-level routes.
+- `frontend/src/pages/` – Route-level screens for dashboard, properties, and tenants.
+- `frontend/src/components/` – Reusable UI pieces such as summary cards and task lists.
+- `frontend/src/styles.css` – Lightweight design system for the MVP.
 
 ## Development tips
 
