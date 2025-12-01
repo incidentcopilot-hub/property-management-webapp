@@ -22,6 +22,31 @@ All frontend commands are run from within the `frontend/` directory.
    ```bash
    npm run build
    ```
+5. Configure API base URL (optional). Create `frontend/.env` or `.env.local` with:
+   ```bash
+   VITE_API_URL=http://localhost:4000/api
+   ```
+
+## Backend (API)
+
+Run these commands from `backend/`:
+
+1. Install dependencies:
+   ```bash
+   cd backend && npm install
+   ```
+2. Start in watch mode (ts-node-dev):
+   ```bash
+   npm run dev
+   ```
+3. Build TypeScript to `dist/`:
+   ```bash
+   npm run build
+   ```
+4. Run the built server (default at http://localhost:4000):
+   ```bash
+   npm start
+   ```
 
 ## Repository layout
 

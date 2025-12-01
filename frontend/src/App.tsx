@@ -1,6 +1,8 @@
 import { Link, Route, Routes } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Properties from './pages/Properties';
+import PropertyDetails from './pages/PropertyDetails';
+import UnitDetails from './pages/UnitDetails';
 import Tenants from './pages/Tenants';
 import './styles.css';
 
@@ -25,6 +27,8 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/properties" element={<Properties />} />
           <Route path="/tenants" element={<Tenants />} />
+          <Route path="/properties/:id" element={<PropertyDetails />} />
+          <Route path="/units/:id" element={<UnitDetails />} />
         </Routes>
       </main>
 
