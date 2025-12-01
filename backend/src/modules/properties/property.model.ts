@@ -1,1 +1,9 @@
-// Defines the property data schema or interfaces used throughout the backend.
+export interface Property {
+  id: string;
+  name: string;
+  address: string;
+  city?: string;
+  country?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
