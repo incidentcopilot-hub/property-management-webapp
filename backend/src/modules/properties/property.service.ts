@@ -1,31 +1,37 @@
+import { prisma } from '../../prisma';
 import { Property } from './property.model';
 
 export class PropertyService {
   constructor() {}
 
   async getAll(): Promise<Property[]> {
-    return []; // TODO: replace with DB call
+    const properties = await prisma.property.findMany();
+    return properties.map((property) => ({
+      ...property,
+      city: property.city ?? undefined,
+      country: property.country ?? undefined,
+    }));
   }
 
-  async getById(id: string): Promise<Property | null> {
-    return null; // TODO
+    async getById(id: string) {
+    return prisma.property.findUnique({
+      where: { id },
+      include: { units: true },
+    });
   }
 
-  async create(data: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>): Promise<Property> {
-    const now = new Date();
-    return {
-      id: 'temp-id',
-      createdAt: now,
-      updatedAt: now,
-      ...data,
-    };
+  async create(data: { name: string; address: string; city?: string; country?: string }) {
+    return prisma.property.create({ data });
   }
 
-  async update(id: string, data: Partial<Omit<Property, 'id' | 'createdAt'>>): Promise<Property | null> {
-    return null; // TODO
+  async update(id: string, data: any) {
+    return prisma.property.update({
+      where: { id },
+      data,
+    });
   }
 
-  async delete(id: string): Promise<void> {
-    return; // TODO
+  async delete(id: string) {
+    await prisma.property.delete({ where: { id } });
   }
 }

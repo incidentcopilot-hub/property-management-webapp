@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Card from '../components/Card';
+import PropertyCard from '../components/PropertyCard';
 import { fetchJSON } from '../lib/api';
 
 type Property = {
@@ -33,16 +33,11 @@ function Properties() {
 
       <div className="grid">
         {properties.map((property) => (
-          <Card
+          <PropertyCard
             key={property.id}
-            title={property.name}
+            property={property}
             onClick={() => navigate(`/properties/${property.id}`)}
-          >
-            <p>{property.address}</p>
-            {(property.city || property.country) && (
-              <p className="muted">{[property.city, property.country].filter(Boolean).join(', ')}</p>
-            )}
-          </Card>
+          />
         ))}
       </div>
     </div>
