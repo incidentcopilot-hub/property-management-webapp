@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Properties from './pages/Properties';
 import PropertyDetails from './pages/PropertyDetails';
@@ -7,6 +7,9 @@ import Tenants from './pages/Tenants';
 import './styles.css';
 
 function App() {
+  const location = useLocation();
+  const activePath = location.pathname;
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -16,9 +19,18 @@ function App() {
           <p className="subtitle">Tools for private landlords to organize rentals.</p>
         </div>
         <nav className="nav">
-          <Link to="/">Dashboard</Link>
-          <Link to="/properties">Properties</Link>
-          <Link to="/tenants">Tenants</Link>
+          <Link className={activePath === '/' ? 'nav-active' : ''} to="/">
+            Dashboard
+          </Link>
+          <Link
+            className={activePath.startsWith('/properties') ? 'nav-active' : ''}
+            to="/properties"
+          >
+            Properties
+          </Link>
+          <Link className={activePath.startsWith('/tenants') ? 'nav-active' : ''} to="/tenants">
+            Tenants
+          </Link>
         </nav>
       </header>
 
@@ -33,7 +45,20 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Start capturing units, leases, payments, and tenant communication.</p>
+        <div className="footer-content">
+          <div>
+            <p className="label">Property Management</p>
+            <p className="footer-title">Operate with confidence.</p>
+            <p className="muted">
+              Track units, houses, leases, and payments from one streamlined workspace.
+            </p>
+          </div>
+          <div className="footer-links">
+            <a href="#">Support</a>
+            <a href="#">Status</a>
+            <a href="#">Privacy</a>
+          </div>
+        </div>
       </footer>
     </div>
   );

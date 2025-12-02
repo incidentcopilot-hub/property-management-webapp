@@ -17,11 +17,21 @@ model Property {
   id        String   @id @default(uuid())
   name      String
   address   String
+  propertyType PropertyType @default(APARTMENT)
+  bedrooms  Int?
+  bathrooms Int?
+  monthlyRent Int?
+  occupancy UnitStatus @default(VACANT)
   city      String?
   country   String?
   units     Unit[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
 }
 
 model Unit {
