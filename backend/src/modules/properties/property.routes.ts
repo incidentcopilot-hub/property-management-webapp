@@ -16,8 +16,28 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 router.post('/', async (req: Request, res: Response) => {
-  const { name, address, city, country } = req.body;
-  const created = await propertyService.create({ name, address, city, country });
+  const {
+    name,
+    address,
+    city,
+    country,
+    propertyType = 'APARTMENT',
+    occupancy = 'VACANT',
+    bedrooms,
+    bathrooms,
+    monthlyRent,
+  } = req.body;
+  const created = await propertyService.create({
+    name,
+    address,
+    city,
+    country,
+    propertyType,
+    occupancy,
+    bedrooms: bedrooms === undefined ? undefined : Number(bedrooms),
+    bathrooms: bathrooms === undefined ? undefined : Number(bathrooms),
+    monthlyRent: monthlyRent === undefined ? undefined : Number(monthlyRent),
+  });
   res.status(201).json(created);
 });
 

@@ -9,15 +9,15 @@ router.get('/', async (_req: Request, res: Response) => {
   res.json(units);
 });
 
+router.get('/by-property/:propertyId', async (req: Request, res: Response) => {
+  const units = await unitService.getByPropertyId(req.params.propertyId);
+  res.json(units);
+});
+
 router.get('/:id', async (req: Request, res: Response) => {
   const unit = await unitService.getById(req.params.id);
   if (!unit) return res.status(404).json({ message: 'Unit not found' });
   res.json(unit);
-});
-
-router.get('/by-property/:propertyId', async (req: Request, res: Response) => {
-  const units = await unitService.getByPropertyId(req.params.propertyId);
-  res.json(units);
 });
 
 router.post('/', async (req: Request, res: Response) => {
