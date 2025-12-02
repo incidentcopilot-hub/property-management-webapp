@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Property {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  city      String?
+  country   String?
+  units     Unit[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Unit {
+  id         String   @id @default(uuid())
+  property   Property @relation(fields: [propertyId], references: [id])
+  propertyId String
+  unitNumber String
+  rentAmount Int
+  status     UnitStatus @default(VACANT)
+  tenants    Tenant[]
+  leases     Lease[]
+  payments   Payment[]
+  maintenanceRequests MaintenanceRequest[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+enum UnitStatus {
+  VACANT
+  OCCUPIED
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  unit      Unit     @relation(fields: [unitId], references: [id])
+  unitId    String
+  name      String
+  phone     String
+  email     String?
+  leases    Lease[]
+  payments  Payment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lease {
+  id        String   @id @default(uuid())
+  unit      Unit     @relation(fields: [unitId], references: [id])
+  unitId    String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId  String
+  startDate DateTime
+  endDate   DateTime?
+  documentUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  unit      Unit     @relation(fields: [unitId], references: [id])
+  unitId    String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId  String
+  amount    Int
+  method    PaymentMethod
+  createdAt DateTime @default(now())
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  BANK_TRANSFER
+}
+
+model MaintenanceRequest {
+  id        String   @id @default(uuid())
+  unit      Unit     @relation(fields: [unitId], references: [id])
+  unitId    String
+  message   String
+  photoUrl  String?
+  status    MaintenanceStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+}

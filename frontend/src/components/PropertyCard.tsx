@@ -1,24 +1,36 @@
-type PropertyCardProps = {
+type Property = {
+  id: string;
   name: string;
   address: string;
-  units: number;
-  occupancy: string;
-  nextAction: string;
+  city?: string;
+  country?: string;
 };
 
-function PropertyCard({ name, address, units, occupancy, nextAction }: PropertyCardProps) {
+type Props = {
+  property: Property;
+  onClick: () => void;
+};
+
+function PropertyCard({ property, onClick }: Props) {
+  const location = [property.city, property.country].filter(Boolean).join(', ');
+
   return (
-    <article className="card property-card">
-      <header className="section-heading">
+    <button className="property-card" onClick={onClick}>
+      <div className="property-card__header">
         <div>
-          <p className="label">{address}</p>
-          <h3>{name}</h3>
+          <p className="property-card__eyebrow">Property</p>
+          <h3>{property.name}</h3>
         </div>
-        <span className="pill">{units} units</span>
-      </header>
-      <p className="value">{occupancy}</p>
-      <p className="helper">{nextAction}</p>
-    </article>
+        <span className="property-card__badge">Manage</span>
+      </div>
+
+      <p className="property-card__address">{property.address}</p>
+      {location && <p className="property-card__location">📍 {location}</p>}
+
+      <div className="property-card__footer">
+        <span className="property-card__chip">Units & tenants</span>
+      </div>
+    </button>
   );
 }
 
