@@ -1,28 +1,14 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchJSON } from '../lib/api';
+import Loader from '../../../components/Loader';
+import SlideOver from '../../../components/SlideOver';
+import { createTenant } from '../../tenants/api';
+import { createUnit, getUnit } from '../../units/api';
+import { Unit } from '../../units/types';
+import { getProperty, getUnitsForProperty, updateHouse } from '../api';
+import { Property, OccupancyStatus } from '../types';
 
-type Property = {
-  id: string;
-  name: string;
-  address: string;
-  propertyType: 'APARTMENT' | 'HOUSE';
-  monthlyRent?: number;
-  occupancy?: 'VACANT' | 'OCCUPIED';
-  bedrooms?: number;
-  bathrooms?: number;
-  city?: string;
-  country?: string;
-};
-
-type Unit = {
-  id: string;
-  unitNumber: string;
-  rentAmount: number;
-  status: string;
-};
-
-function PropertyDetails() {
+function PropertyDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [property, setProperty] = useState<Property | null>(null);
@@ -37,10 +23,20 @@ function PropertyDetails() {
     rentAmount: '',
     status: 'VACANT',
   });
+  const [tenantPanelOpen, setTenantPanelOpen] = useState(false);
+  const [tenantSubmitting, setTenantSubmitting] = useState(false);
+  const [tenantError, setTenantError] = useState<string | null>(null);
+  const [tenantForm, setTenantForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+  });
+  const [tenantCount, setTenantCount] = useState(0);
   const [rentForm, setRentForm] = useState('');
   const [rentSubmitting, setRentSubmitting] = useState(false);
   const [rentError, setRentError] = useState<string | null>(null);
-  const [occupancy, setOccupancy] = useState<'VACANT' | 'OCCUPIED'>('VACANT');
+  const [occupancy, setOccupancy] = useState<OccupancyStatus>('VACANT');
 
   const stats = useMemo(() => {
     const totalUnits = units.length;
@@ -56,16 +52,20 @@ function PropertyDetails() {
 
     const load = async () => {
       try {
-        const propertyData: Property = await fetchJSON(`/properties/${id}`);
+        const propertyData = await getProperty(id);
         setProperty(propertyData);
         if (propertyData.propertyType === 'HOUSE' && propertyData.monthlyRent) {
           setRentForm(String(propertyData.monthlyRent));
         }
         if (propertyData.occupancy) {
-          setOccupancy(propertyData.occupancy as 'VACANT' | 'OCCUPIED');
+          setOccupancy(propertyData.occupancy);
         }
-        const unitsData: Unit[] = await fetchJSON(`/units/by-property/${id}`);
+        const unitsData = await getUnitsForProperty(id);
         setUnits(unitsData);
+        if (propertyData.propertyType === 'HOUSE' && unitsData[0]) {
+          const unitWithTenants = await getUnit(unitsData[0].id);
+          setTenantCount(unitWithTenants.tenants?.length || 0);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load property');
       } finally {
@@ -91,14 +91,11 @@ function PropertyDetails() {
     setUnitSubmitting(true);
 
     try {
-      const created = await fetchJSON<Unit>('/units', {
-        method: 'POST',
-        body: JSON.stringify({
-          propertyId: id,
-          unitNumber: unitForm.unitNumber.trim(),
-          rentAmount: rent,
-          status: unitForm.status,
-        }),
+      const created = await createUnit({
+        propertyId: id,
+        unitNumber: unitForm.unitNumber.trim(),
+        rentAmount: rent,
+        status: unitForm.status,
       });
 
       setUnits((prev) => [created, ...prev]);
@@ -121,14 +118,16 @@ function PropertyDetails() {
       return;
     }
 
+    if (property?.propertyType === 'HOUSE' && occupancy === 'OCCUPIED' && tenantCount === 0) {
+      setRentError('Assign a tenant before marking this house occupied');
+      return;
+    }
+
     setRentError(null);
     setRentSubmitting(true);
 
     try {
-      const updated = await fetchJSON<Property>(`/properties/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ monthlyRent: rent, occupancy }),
-      });
+      const updated = await updateHouse(id, { monthlyRent: rent, occupancy });
       setProperty(updated);
       setRentForm(updated.monthlyRent ? String(updated.monthlyRent) : '');
       if (updated.occupancy) setOccupancy(updated.occupancy as 'VACANT' | 'OCCUPIED');
@@ -139,7 +138,7 @@ function PropertyDetails() {
     }
   };
 
-  if (loading) return <p>Loading property...</p>;
+  if (loading) return <Loader label="Loading property..." />;
   if (error) return <p className="text-danger">Error: {error}</p>;
   if (!property) return <p>Property not found.</p>;
   const location = [property.city, property.country].filter(Boolean).join(', ');
@@ -241,11 +240,11 @@ function PropertyDetails() {
               </div>
             </div>
 
-            {units.length === 0 && <p className="muted">No units for this property yet.</p>}
-            <div className="unit-grid">
-              {units.map((unit) => (
-                <button
-                  key={unit.id}
+          {units.length === 0 && <p className="muted">No units for this property yet.</p>}
+          <div className="unit-grid">
+            {units.map((unit) => (
+              <button
+                key={unit.id}
                   className="unit-card"
                   onClick={() => navigate(`/units/${unit.id}`)}
                   aria-label={`Unit ${unit.unitNumber}`}
@@ -261,65 +260,56 @@ function PropertyDetails() {
             </div>
           </section>
 
-          {unitPanelOpen && (
-            <div className="overlay" onClick={() => setUnitPanelOpen(false)}>
-              <div className="panel panel-content" onClick={(e) => e.stopPropagation()}>
-                <div className="panel-header">
-                  <div>
-                    <p className="label">Add a unit</p>
-                    <h3 style={{ margin: 0 }}>Capture inventory for this property</h3>
-                  </div>
-                  <button className="ghost-btn" type="button" onClick={() => setUnitPanelOpen(false)}>
-                    ×
-                  </button>
-                </div>
-                <form className="form-grid" onSubmit={handleUnitSubmit} style={{ marginTop: 12 }}>
-                  <label className="form-field">
-                    <span>Unit number</span>
-                    <input
-                      required
-                      value={unitForm.unitNumber}
-                      onChange={(e) => setUnitForm({ ...unitForm, unitNumber: e.target.value })}
-                      placeholder="1A"
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Rent amount</span>
-                    <input
-                      required
-                      type="number"
-                      min="0"
-                      value={unitForm.rentAmount}
-                      onChange={(e) => setUnitForm({ ...unitForm, rentAmount: e.target.value })}
-                      placeholder="1200"
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span>Status</span>
-                    <select
-                      value={unitForm.status}
-                      onChange={(e) => setUnitForm({ ...unitForm, status: e.target.value })}
-                    >
-                      <option value="VACANT">Vacant</option>
-                      <option value="OCCUPIED">Occupied</option>
-                    </select>
-                  </label>
-                  <div
-                    className="form-actions"
-                    style={{ flexDirection: 'column', alignItems: 'flex-end', marginTop: 'auto' }}
-                  >
-                    <button type="submit" className="primary-btn" disabled={unitSubmitting}>
-                      {unitSubmitting ? 'Saving...' : 'Add unit'}
-                    </button>
-                    <button className="ghost-btn" type="button" onClick={() => setUnitPanelOpen(false)}>
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-                {unitError && <p className="text-danger">Failed to add unit: {unitError}</p>}
+          <SlideOver
+            isOpen={unitPanelOpen}
+            onClose={() => setUnitPanelOpen(false)}
+            title="Capture inventory for this property"
+            subtitle="Add a unit"
+            footer={
+              <div className="form-actions">
+                <button type="submit" form="unit-form" className="primary-btn" disabled={unitSubmitting}>
+                  {unitSubmitting ? 'Saving...' : 'Add unit'}
+                </button>
+                <button className="ghost-btn" type="button" onClick={() => setUnitPanelOpen(false)}>
+                  Cancel
+                </button>
               </div>
-            </div>
-          )}
+            }
+          >
+            <form id="unit-form" className="form-grid" onSubmit={handleUnitSubmit}>
+              <label className="form-field">
+                <span>Unit number</span>
+                <input
+                  required
+                  value={unitForm.unitNumber}
+                  onChange={(e) => setUnitForm({ ...unitForm, unitNumber: e.target.value })}
+                  placeholder="1A"
+                />
+              </label>
+              <label className="form-field">
+                <span>Rent amount</span>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  value={unitForm.rentAmount}
+                  onChange={(e) => setUnitForm({ ...unitForm, rentAmount: e.target.value })}
+                  placeholder="1200"
+                />
+              </label>
+              <label className="form-field">
+                <span>Status</span>
+                <select
+                  value={unitForm.status}
+                  onChange={(e) => setUnitForm({ ...unitForm, status: e.target.value })}
+                >
+                  <option value="VACANT">Vacant</option>
+                  <option value="OCCUPIED">Occupied</option>
+                </select>
+              </label>
+              {unitError && <p className="text-danger">Failed to add unit: {unitError}</p>}
+            </form>
+          </SlideOver>
         </>
       ) : (
         <section className="unit-section">
@@ -342,7 +332,7 @@ function PropertyDetails() {
             </label>
             <label className="form-field">
               <span>Status</span>
-              <select value={occupancy} onChange={(e) => setOccupancy(e.target.value as 'VACANT' | 'OCCUPIED')}>
+              <select value={occupancy} onChange={(e) => setOccupancy(e.target.value as OccupancyStatus)}>
                 <option value="VACANT">Vacant</option>
                 <option value="OCCUPIED">Occupied</option>
               </select>
@@ -354,10 +344,126 @@ function PropertyDetails() {
             </div>
           </form>
           {rentError && <p className="text-danger">Failed to save rent: {rentError}</p>}
+
+          <div className="card" style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <p className="label">Tenants</p>
+              <h3 className="section-title">Assign to this house</h3>
+              <p className="muted" style={{ margin: 0 }}>
+                {tenantCount > 0
+                  ? `${tenantCount} tenant${tenantCount === 1 ? '' : 's'} linked`
+                  : 'No tenant assigned yet.'}
+              </p>
+            </div>
+            <button className="primary-btn" type="button" onClick={() => setTenantPanelOpen(true)}>
+              Add tenant
+            </button>
+          </div>
         </section>
       )}
+
+      <SlideOver
+        isOpen={tenantPanelOpen}
+        onClose={() => setTenantPanelOpen(false)}
+        title="Assign tenant"
+        subtitle="Link a renter to this house"
+        footer={
+          <div className="form-actions">
+            <button className="primary-btn" type="submit" form="house-tenant-form" disabled={tenantSubmitting}>
+              {tenantSubmitting ? 'Assigning...' : 'Assign tenant'}
+            </button>
+            <button className="ghost-btn" type="button" onClick={() => setTenantPanelOpen(false)}>
+              Cancel
+            </button>
+            {tenantError && <p className="text-danger">Failed to assign tenant: {tenantError}</p>}
+          </div>
+        }
+      >
+        <form
+          id="house-tenant-form"
+          className="form-grid"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!id) return;
+            setTenantError(null);
+            setTenantSubmitting(true);
+            try {
+              let targetUnitId = units[0]?.id;
+              if (!targetUnitId) {
+                const createdUnit = await createUnit({
+                  propertyId: id,
+                  unitNumber: 'HOUSE',
+                  rentAmount: property?.monthlyRent || 0,
+                  status: 'OCCUPIED',
+                });
+                targetUnitId = createdUnit.id;
+                setUnits((prev) => [createdUnit, ...prev]);
+              }
+
+              await createTenant({
+                firstName: tenantForm.firstName.trim(),
+                lastName: tenantForm.lastName.trim(),
+                phone: tenantForm.phone.trim(),
+                email: tenantForm.email.trim() || undefined,
+                unitId: targetUnitId,
+              });
+
+              setTenantForm({ firstName: '', lastName: '', phone: '', email: '' });
+              setTenantCount((c) => c + 1);
+              setOccupancy('OCCUPIED');
+              const updatedHouse = await updateHouse(id, {
+                occupancy: 'OCCUPIED',
+                monthlyRent: rentForm ? Number(rentForm) : property?.monthlyRent,
+              });
+              setProperty(updatedHouse);
+              setTenantPanelOpen(false);
+            } catch (err) {
+              setTenantError(err instanceof Error ? err.message : 'Failed to assign tenant');
+            } finally {
+              setTenantSubmitting(false);
+            }
+          }}
+        >
+          <label className="form-field">
+            <span>First name</span>
+            <input
+              required
+              value={tenantForm.firstName}
+              onChange={(e) => setTenantForm({ ...tenantForm, firstName: e.target.value })}
+              placeholder="Lessee first name"
+            />
+          </label>
+          <label className="form-field">
+            <span>Last name</span>
+            <input
+              required
+              value={tenantForm.lastName}
+              onChange={(e) => setTenantForm({ ...tenantForm, lastName: e.target.value })}
+              placeholder="Lessee last name"
+            />
+          </label>
+          <label className="form-field">
+            <span>Phone</span>
+            <input
+              required
+              value={tenantForm.phone}
+              onChange={(e) => setTenantForm({ ...tenantForm, phone: e.target.value })}
+              placeholder="+1 555 123 4567"
+            />
+          </label>
+          <label className="form-field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={tenantForm.email}
+              onChange={(e) => setTenantForm({ ...tenantForm, email: e.target.value })}
+              placeholder="tenant@example.com"
+            />
+          </label>
+        </form>
+      </SlideOver>
     </div>
   );
 }
 
-export default PropertyDetails;
+export default PropertyDetailsPage;

@@ -48,6 +48,14 @@ Run these commands from `backend/`:
    npm start
    ```
 
+## Run frontend + backend together
+
+After installing dependencies in both `frontend/` and `backend/`, you can start both dev servers from the repo root:
+
+```bash
+npm run dev
+```
+
 ## Repository layout
 
 - `frontend/` – Frontend application (Vite + React) with routes, components, and styles.
@@ -58,8 +66,9 @@ Run these commands from `backend/`:
 ## Project structure
 
 - `frontend/src/App.tsx` – Shell layout with navigation and high-level routes.
-- `frontend/src/pages/` – Route-level screens for dashboard, properties, and tenants.
-- `frontend/src/components/` – Reusable UI pieces such as summary cards and task lists.
+- `frontend/src/features/` – Domain-first folders (`dashboard`, `properties`, `units`, `tenants`) holding their pages, domain components, and API helpers.
+- `frontend/src/components/` – Shared UI pieces such as summary cards, slide-overs, and task lists.
+- `frontend/src/services/` – Cross-feature utilities like the API client.
 - `frontend/src/styles.css` – Lightweight design system for the MVP.
 
 ## Development tips

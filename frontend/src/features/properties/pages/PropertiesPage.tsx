@@ -1,24 +1,24 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Loader from '../../../components/Loader';
+import SlideOver from '../../../components/SlideOver';
+import { createProperty, getProperties } from '../api';
 import PropertyCard from '../components/PropertyCard';
-import SlideOver from '../components/SlideOver';
-import { fetchJSON } from '../lib/api';
+import { Property, PropertyType, OccupancyStatus } from '../types';
 
-type Property = {
-  id: string;
+type FormValues = {
   name: string;
   address: string;
-  propertyType: 'APARTMENT' | 'HOUSE';
-  occupancy?: 'VACANT' | 'OCCUPIED';
-  monthlyRent?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  city?: string;
-  country?: string;
-  units?: { id: string }[];
+  propertyType: PropertyType;
+  occupancy: OccupancyStatus;
+  monthlyRent: string;
+  bedrooms: string;
+  bathrooms: string;
+  city: string;
+  country: string;
 };
 
-function Properties() {
+function PropertiesPage() {
   const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,11 +27,11 @@ function Properties() {
   const [submitting, setSubmitting] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'ALL' | 'APARTMENT' | 'HOUSE'>('ALL');
-  const [formValues, setFormValues] = useState({
+  const [formValues, setFormValues] = useState<FormValues>({
     name: '',
     address: '',
-    propertyType: 'APARTMENT' as 'APARTMENT' | 'HOUSE',
-    occupancy: 'VACANT' as 'VACANT' | 'OCCUPIED',
+    propertyType: 'APARTMENT',
+    occupancy: 'VACANT',
     monthlyRent: '',
     bedrooms: '',
     bathrooms: '',
@@ -40,8 +40,8 @@ function Properties() {
   });
 
   const loadProperties = () =>
-    fetchJSON('/properties')
-      .then((data: Property[]) => setProperties(data))
+    getProperties()
+      .then((data) => setProperties(data))
       .catch((err: Error) => setError(err.message));
 
   useEffect(() => {
@@ -54,28 +54,25 @@ function Properties() {
     setSubmitting(true);
 
     try {
-      const created = await fetchJSON<Property>('/properties', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: formValues.name.trim(),
-          address: formValues.address.trim(),
-          propertyType: formValues.propertyType,
-          occupancy: formValues.propertyType === 'HOUSE' ? formValues.occupancy : undefined,
-          monthlyRent:
-            formValues.propertyType === 'HOUSE' && formValues.monthlyRent
-              ? Number(formValues.monthlyRent)
-              : undefined,
-          bedrooms:
-            formValues.propertyType === 'HOUSE' && formValues.bedrooms
-              ? Number(formValues.bedrooms)
-              : undefined,
-          bathrooms:
-            formValues.propertyType === 'HOUSE' && formValues.bathrooms
-              ? Number(formValues.bathrooms)
-              : undefined,
-          city: formValues.city.trim() || undefined,
-          country: formValues.country.trim() || undefined,
-        }),
+      const created = await createProperty({
+        name: formValues.name.trim(),
+        address: formValues.address.trim(),
+        propertyType: formValues.propertyType,
+        occupancy: formValues.propertyType === 'HOUSE' ? formValues.occupancy : undefined,
+        monthlyRent:
+          formValues.propertyType === 'HOUSE' && formValues.monthlyRent
+            ? Number(formValues.monthlyRent)
+            : undefined,
+        bedrooms:
+          formValues.propertyType === 'HOUSE' && formValues.bedrooms
+            ? Number(formValues.bedrooms)
+            : undefined,
+        bathrooms:
+          formValues.propertyType === 'HOUSE' && formValues.bathrooms
+            ? Number(formValues.bathrooms)
+            : undefined,
+        city: formValues.city.trim() || undefined,
+        country: formValues.country.trim() || undefined,
       });
 
       setProperties((prev) => [created, ...prev]);
@@ -161,10 +158,7 @@ function Properties() {
         title="Capture a new asset"
         subtitle="New property"
         footer={
-          <div
-            className="form-actions"
-            style={{ flexDirection: 'column', alignItems: 'flex-end', marginTop: 'auto' }}
-          >
+          <div className="form-actions" style={{ marginTop: 'auto' }}>
             <button type="submit" form="property-form" className="primary-btn" disabled={submitting}>
               {submitting ? 'Saving...' : 'Add property'}
             </button>
@@ -200,7 +194,7 @@ function Properties() {
               onChange={(e) =>
                 setFormValues({
                   ...formValues,
-                  propertyType: e.target.value as 'APARTMENT' | 'HOUSE',
+                  propertyType: e.target.value as PropertyType,
                 })
               }
             >
@@ -217,7 +211,7 @@ function Properties() {
                   onChange={(e) =>
                     setFormValues({
                       ...formValues,
-                      occupancy: e.target.value as 'VACANT' | 'OCCUPIED',
+                      occupancy: e.target.value as OccupancyStatus,
                     })
                   }
                 >
@@ -278,7 +272,7 @@ function Properties() {
         {createError && <p className="text-danger">Failed to add property: {createError}</p>}
       </SlideOver>
 
-      {loading && <p>Loading properties...</p>}
+      {loading && <Loader label="Fetching properties..." />}
       {error && <p className="text-danger">Failed to load properties: {error}</p>}
       {!loading && !error && properties.length === 0 && <p>No properties found.</p>}
 
@@ -298,4 +292,4 @@ function Properties() {
   );
 }
 
-export default Properties;
+export default PropertiesPage;

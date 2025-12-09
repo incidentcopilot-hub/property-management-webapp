@@ -1,16 +1,4 @@
-type Property = {
-  id: string;
-  name: string;
-  address: string;
-  propertyType?: 'APARTMENT' | 'HOUSE';
-  monthlyRent?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  units?: { id: string }[];
-  occupancy?: 'VACANT' | 'OCCUPIED';
-  city?: string;
-  country?: string;
-};
+import { Property } from '../types';
 
 type Props = {
   property: Property;
