@@ -1,20 +1,11 @@
 import { useEffect, useState } from 'react';
-import SummaryCard from '../components/SummaryCard';
-import TaskList from '../components/TaskList';
-import { fetchJSON } from '../lib/api';
-
-type Property = {
-  id: string;
-  propertyType: 'APARTMENT' | 'HOUSE';
-  monthlyRent?: number;
-  occupancy?: 'VACANT' | 'OCCUPIED';
-};
-
-type Unit = {
-  id: string;
-  rentAmount: number;
-  status: string;
-};
+import Loader from '../../../components/Loader';
+import SummaryCard from '../../../components/SummaryCard';
+import TaskList from '../../../components/TaskList';
+import { getProperties } from '../../properties/api';
+import { Property } from '../../properties/types';
+import { getUnits } from '../../units/api';
+import { Unit } from '../../units/types';
 
 const tasks = [
   'Send lease renewal paperwork to Unit 4B',
@@ -22,7 +13,7 @@ const tasks = [
   'Follow up on late payment for Tenant #104',
 ];
 
-function Dashboard() {
+function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -31,10 +22,7 @@ function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [propertyData, unitData] = await Promise.all([
-          fetchJSON<Property[]>('/properties'),
-          fetchJSON<Unit[]>('/units'),
-        ]);
+        const [propertyData, unitData] = await Promise.all([getProperties(), getUnits()]);
         setProperties(propertyData);
         setUnits(unitData);
       } catch (err) {
@@ -75,7 +63,7 @@ function Dashboard() {
 
   return (
     <div className="stack-md">
-      {loading && <p>Loading portfolio...</p>}
+      {loading && <Loader label="Assembling your dashboard..." />}
       {error && <p className="text-danger">Failed to load dashboard: {error}</p>}
 
       {!loading && !error && (
@@ -98,4 +86,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default DashboardPage;

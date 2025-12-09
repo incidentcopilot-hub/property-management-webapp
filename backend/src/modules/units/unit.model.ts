@@ -6,6 +6,7 @@ export interface Unit {
   unitNumber: string;
   rentAmount: number;
   status: UnitStatus;
+  tenants?: { id: string; name: string; email?: string | null; phone: string }[];
   createdAt: Date;
   updatedAt: Date;
 }

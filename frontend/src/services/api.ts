@@ -9,6 +9,9 @@ export async function fetchJSON<TResponse = unknown>(
     ...init,
   });
 
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || `API error: ${res.status}`);
+  }
   return res.json() as Promise<TResponse>;
 }

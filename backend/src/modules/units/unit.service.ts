@@ -9,7 +9,7 @@ export class UnitService {
   }
 
   async getById(id: string): Promise<Unit | null> {
-    return prisma.unit.findUnique({ where: { id } });
+    return prisma.unit.findUnique({ where: { id }, include: { tenants: true } });
   }
 
   async getByPropertyId(propertyId: string): Promise<Unit[]> {
